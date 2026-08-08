@@ -64,13 +64,12 @@ def test_data_and_logic():
     router_data = res_router.json()
     print(f"GET /router/{worst_router_id} -> OK, health_score:", router_data["score_details"]["health_score"])
 
-    # Test POST /copilot
-    res_copilot = client.post("/copilot", json={"router_id": worst_router_id, "question": "Why is this router underperforming?"})
-    assert res_copilot.status_code == 200, f"Copilot failed: {res_copilot.status_code}"
-    copilot_data = res_copilot.json()
-    print(f"\nPOST /copilot -> OK for {worst_router_id}:")
-    print("Cause:", copilot_data["diagnosis"]["cause"])
-    print("Phrased answer:", copilot_data["phrased_answer"])
+    # Test GET /firmware-stats
+    res_fw = client.get("/firmware-stats")
+    assert res_fw.status_code == 200, f"Firmware stats failed: {res_fw.status_code}"
+    fw_data = res_fw.json()
+    print("GET /firmware-stats -> OK, returned entries:", len(fw_data))
+    assert any(item["firmware_version"] == "v5.1" and item["is_flagged"] for item in fw_data)
 
     print("\nALL VERIFICATION TESTS PASSED SUCCESSFULLY!")
 

@@ -160,12 +160,23 @@ def call_gemini_phrasing(diagnosis: dict, question: Optional[str] = None) -> str
         return _fallback_phrasing(diagnosis)
 
 
+def _round_floats(obj):
+    """Recursively round all float values in a nested dict or list to 2 decimal places."""
+    if isinstance(obj, float):
+        return round(obj, 2)
+    elif isinstance(obj, dict):
+        return {k: _round_floats(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_round_floats(v) for v in obj]
+    return obj
+
+
 @app.get("/")
 def read_root():
     return {
         "status": "online",
         "service": "Campus Router Health 360 Backend",
-        "endpoints": ["/rankings", "/router/{router_id}", "/copilot"],
+        "endpoints": ["/rankings", "/router/{router_id}", "/copilot", "/firmware-stats"],
     }
 
 
@@ -182,11 +193,21 @@ def get_rankings(limit: int = 10):
     )
     
     records = merged.to_dict(orient="records")
-    clean_records = json.loads(json.dumps(records, default=str))
+    raw_json = json.loads(json.dumps(records, default=str))
+    clean_records = _round_floats(raw_json)
     return {
         "count": len(clean_records),
         "rankings": clean_records,
     }
+
+
+@app.get("/firmware-stats")
+def get_firmware_stats():
+    """Returns list of firmware versions with affected_router_count, avg_bad_hour_count, avg_health_score, is_flagged."""
+    stats_df = get_firmware_batch_flags(scored_df, routers_df)
+    records = stats_df.to_dict(orient="records")
+    raw_json = json.loads(json.dumps(records, default=str))
+    return _round_floats(raw_json)
 
 
 @app.get("/router/{router_id}")
@@ -214,7 +235,8 @@ def get_router_detail(router_id: str):
         "complaints": complaints_list,
         "hourly_metrics": metrics_list,
     }
-    return json.loads(json.dumps(result, default=str))
+    raw_json = json.loads(json.dumps(result, default=str))
+    return _round_floats(raw_json)
 
 
 @app.post("/copilot")
