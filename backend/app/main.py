@@ -164,6 +164,17 @@ def get_rankings(n: int = 10):
     return {"count": len(records), "rankings": records}
 
 
+@app.get("/firmware-stats")
+def get_firmware_stats():
+    """GET /firmware-stats -> per-firmware-version fleet health stats.
+    Used by the frontend to show a banner when a firmware version is
+    flagged as a fleet-wide issue (the differentiator feature)."""
+    firmware_stats_df = DATA["firmware_stats"]
+    raw_records = firmware_stats_df.to_dict(orient="records")
+    clean_records = json.loads(json.dumps(raw_records, default=str))
+    return {"firmware_stats": clean_records}
+
+
 @app.get("/router/{router_id}")
 def get_router_detail(router_id: str):
     scored_df = DATA["scored_df"]
@@ -195,13 +206,6 @@ def get_router_detail(router_id: str):
     }
 
 
-@app.get("/firmware-stats")
-def get_firmware_stats():
-    firmware_stats = DATA["firmware_stats"]
-    records = firmware_stats.to_dict(orient="records")
-    return {"firmware_stats": records}
-
-
 @app.post("/copilot")
 def query_copilot(req: CopilotRequest):
     scored_df = DATA["scored_df"]
@@ -219,4 +223,4 @@ def query_copilot(req: CopilotRequest):
         "question": req.question,
         "diagnosis": diag,
         "phrased_answer": phrased,
-    }
+    }

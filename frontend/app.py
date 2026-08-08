@@ -159,19 +159,6 @@ st.markdown(
         margin-top: 16px;
         color: #e0e7ff;
     }
-
-    /* Alert Banner for Flagged Firmware */
-    .firmware-alert-banner {
-        background: linear-gradient(135deg, #dc2626 0%, #ea580c 100%);
-        border: 1px solid #f87171;
-        border-radius: 12px;
-        padding: 16px 24px;
-        color: #ffffff;
-        font-size: 1.15rem;
-        font-weight: 700;
-        margin-bottom: 20px;
-        box-shadow: 0 10px 25px -5px rgba(220, 38, 38, 0.4);
-    }
 </style>
 """,
     unsafe_allow_html=True,
@@ -202,7 +189,7 @@ def fetch_rankings(n=10):
         if resp.status_code == 200:
             return resp.json().get("rankings", [])
         else:
-            st.error(f"API Error {resp.status_code}: {resp.text}")
+            st.error(f"API Error {resp.stacd..tus_code}: {resp.text}")
             return []
     except Exception as e:
         st.error(f"Could not connect to backend at `{API_URL}`: {e}")
@@ -741,8 +728,10 @@ with st.form("copilot_form", clear_on_submit=False):
 
 if submit_copilot or quick_question:
     query_text = quick_question if quick_question else user_question
+
+    copilot_result = None
     with st.spinner(
-        "Analyzing telemetry data and generating deterministic diagnosis..."
+        "🧠 Contacting AI Copilot — analyzing telemetry, diagnosing root cause..."
     ):
         copilot_result = call_copilot(selected_router_id, query_text)
 
@@ -753,12 +742,14 @@ if submit_copilot or quick_question:
         cause = diag_dict.get("cause", "unknown")
         fix = diag_dict.get("fix", "none")
         confidence = diag_dict.get("confidence", 0.0)
+        confidence_pct = int(round(confidence * 100))
 
         st.markdown(
             f"""
         <div class="copilot-response">
-            <div style="font-size: 1.1rem; font-weight: 700; color: #818cf8; margin-bottom: 8px;">
-                💬 Copilot Diagnosis & Answer:
+            <div style="font-size: 1.1rem; font-weight: 700; color: #818cf8; margin-bottom: 8px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px;">
+                💬 Copilot Diagnosis &amp; Answer:
+                <span class="badge-confidence">🎯 {confidence_pct}% Confidence</span>
             </div>
             <div style="font-size: 1.05rem; line-height: 1.6;">
                 {phrased_ans}
@@ -778,7 +769,7 @@ if submit_copilot or quick_question:
         with ev_c2:
             st.metric("Recommended Fix", str(fix).upper())
         with ev_c3:
-            st.metric("Diagnosis Confidence", f"{confidence * 100:.0f}%")
+            st.metric("Diagnosis Confidence", f"{confidence_pct}%")
         with ev_c4:
             st.metric("Evidence Points", f"{len(evidence)} items")
 
