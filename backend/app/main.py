@@ -11,9 +11,12 @@ import json
 from typing import Optional
 
 import requests
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+
+load_dotenv()  # reads backend/.env and injects GEMINI_API_KEY into os.environ
 
 from app.data_loader import load_all_data
 from app.scoring import get_worst_n
