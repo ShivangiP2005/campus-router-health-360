@@ -7,7 +7,26 @@ import os
 import requests
 import pandas as pd
 import streamlit as st
-import altair as alt
+import plotly.express as px
+import plotly.graph_objects as go
+
+
+def format_health_score_badge(score):
+    try:
+        val = float(score)
+    except (ValueError, TypeError):
+        return str(score)
+
+    if val < 30:
+        badge = "🔴"
+    elif val <= 70:
+        badge = "🟠"
+    else:
+        badge = "🟢"
+
+    score_str = f"{int(val)}" if val.is_integer() else f"{val:.1f}"
+    return f"{badge} {score_str}"
+
 
 # ------------------------------------------------------------------------------
 # Configuration & Setup
@@ -314,6 +333,8 @@ display_cols = [
 available_cols = [col for col in display_cols if col in rankings_df.columns]
 
 display_df = rankings_df[available_cols].copy()
+if "health_score" in display_df.columns:
+    display_df["health_score"] = display_df["health_score"].apply(format_health_score_badge)
 display_df = display_df.rename(
     columns={
         "router_id": "Router ID",
@@ -478,100 +499,130 @@ if metrics:
 
     chart_col1, chart_col2 = st.columns(2)
 
-    # Chart 1: Latency Over 24 Hours
+    # Chart 1: Latency Over 24 Hours (Plotly)
     with chart_col1:
         st.markdown("#### ⏱️ Latency (ms) over 24 Hours")
-        latency_chart = (
-            alt.Chart(metrics_df)
-            .mark_area(
-                line={"color": "#f87171"},
-                color=alt.Gradient(
-                    gradient="linear",
-                    stops=[
-                        alt.GradientStop(color="rgba(248, 113, 113, 0.4)", offset=0),
-                        alt.GradientStop(color="rgba(248, 113, 113, 0.05)", offset=1),
-                    ],
-                    x1=0,
-                    x2=0,
-                    y1=1,
-                    y2=0,
-                ),
-            )
-            .encode(
-                x=alt.X(
-                    "hour_clean:O",
-                    title="Hour of Day",
-                    axis=alt.Axis(labelAngle=-45),
-                ),
-                y=alt.Y(
-                    "latency_ms:Q", title="Latency (ms)", scale=alt.Scale(zero=True)
-                ),
-                tooltip=[
-                    "hour_clean",
-                    "latency_ms",
-                    "avg_speed_mbps",
-                    "signal_dbm",
-                ],
-            )
-            .properties(height=320)
+        fig_latency = go.Figure()
+
+        has_extra_latency_cols = (
+            "avg_speed_mbps" in metrics_df.columns
+            and "signal_dbm" in metrics_df.columns
         )
 
-        thresh_line1 = (
-            alt.Chart(pd.DataFrame({"y": [60]}))
-            .mark_rule(color="#ef4444", strokeDash=[4, 4], strokeWidth=2)
-            .encode(y="y:Q")
+        hover_template_lat = (
+            "<b>Hour:</b> %{x}<br>"
+            "<b>Latency:</b> %{y:.2f} ms<br>"
+            + (
+                "<b>Avg Speed:</b> %{customdata[0]:.1f} Mbps<br>"
+                "<b>Signal Strength:</b> %{customdata[1]:.1f} dBm"
+                if has_extra_latency_cols
+                else ""
+            )
+            + "<extra></extra>"
         )
 
-        st.altair_chart(latency_chart + thresh_line1, use_container_width=True)
+        fig_latency.add_trace(
+            go.Scatter(
+                x=metrics_df["hour_clean"],
+                y=metrics_df["latency_ms"],
+                mode="lines+markers",
+                name="Latency (ms)",
+                line=dict(color="#f87171", width=3),
+                marker=dict(size=6, color="#ef4444"),
+                fill="tozeroy",
+                fillcolor="rgba(248, 113, 113, 0.2)",
+                hovertemplate=hover_template_lat,
+                customdata=metrics_df[["avg_speed_mbps", "signal_dbm"]].values
+                if has_extra_latency_cols
+                else None,
+            )
+        )
+
+        fig_latency.add_hline(
+            y=60,
+            line_dash="dash",
+            line_color="#ef4444",
+            line_width=2,
+            annotation_text="60 ms Bad Threshold",
+            annotation_position="top right",
+            annotation_font=dict(color="#fca5a5", size=11),
+        )
+
+        fig_latency.update_layout(
+            xaxis_title="Hour of Day",
+            yaxis_title="Latency (ms)",
+            template="plotly_dark",
+            margin=dict(l=40, r=30, t=30, b=40),
+            height=340,
+            hovermode="x unified",
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(15, 23, 42, 0.6)",
+        )
+
+        st.plotly_chart(fig_latency, use_container_width=True)
         st.caption("🔴 Red dotted line indicates 60 ms bad latency threshold.")
 
-    # Chart 2: Packet Loss Over 24 Hours
+    # Chart 2: Packet Loss Over 24 Hours (Plotly)
     with chart_col2:
         st.markdown("#### 📦 Packet Loss (%) over 24 Hours")
-        packet_loss_chart = (
-            alt.Chart(metrics_df)
-            .mark_area(
-                line={"color": "#fbbf24"},
-                color=alt.Gradient(
-                    gradient="linear",
-                    stops=[
-                        alt.GradientStop(color="rgba(251, 191, 36, 0.4)", offset=0),
-                        alt.GradientStop(color="rgba(251, 191, 36, 0.05)", offset=1),
-                    ],
-                    x1=0,
-                    x2=0,
-                    y1=1,
-                    y2=0,
-                ),
-            )
-            .encode(
-                x=alt.X(
-                    "hour_clean:O",
-                    title="Hour of Day",
-                    axis=alt.Axis(labelAngle=-45),
-                ),
-                y=alt.Y(
-                    "packet_loss_pct:Q",
-                    title="Packet Loss (%)",
-                    scale=alt.Scale(zero=True),
-                ),
-                tooltip=[
-                    "hour_clean",
-                    "packet_loss_pct",
-                    "disconnects",
-                    "connected_devices",
-                ],
-            )
-            .properties(height=320)
+        fig_loss = go.Figure()
+
+        has_extra_loss_cols = (
+            "disconnects" in metrics_df.columns
+            and "connected_devices" in metrics_df.columns
         )
 
-        thresh_line2 = (
-            alt.Chart(pd.DataFrame({"y": [2.0]}))
-            .mark_rule(color="#f59e0b", strokeDash=[4, 4], strokeWidth=2)
-            .encode(y="y:Q")
+        hover_template_loss = (
+            "<b>Hour:</b> %{x}<br>"
+            "<b>Packet Loss:</b> %{y:.2f}%<br>"
+            + (
+                "<b>Disconnects:</b> %{customdata[0]}<br>"
+                "<b>Connected Devices:</b> %{customdata[1]}"
+                if has_extra_loss_cols
+                else ""
+            )
+            + "<extra></extra>"
         )
 
-        st.altair_chart(packet_loss_chart + thresh_line2, use_container_width=True)
+        fig_loss.add_trace(
+            go.Scatter(
+                x=metrics_df["hour_clean"],
+                y=metrics_df["packet_loss_pct"],
+                mode="lines+markers",
+                name="Packet Loss (%)",
+                line=dict(color="#fbbf24", width=3),
+                marker=dict(size=6, color="#f59e0b"),
+                fill="tozeroy",
+                fillcolor="rgba(251, 191, 36, 0.2)",
+                hovertemplate=hover_template_loss,
+                customdata=metrics_df[["disconnects", "connected_devices"]].values
+                if has_extra_loss_cols
+                else None,
+            )
+        )
+
+        fig_loss.add_hline(
+            y=2.0,
+            line_dash="dash",
+            line_color="#f59e0b",
+            line_width=2,
+            annotation_text="2.0% Bad Threshold",
+            annotation_position="top right",
+            annotation_font=dict(color="#fde047", size=11),
+        )
+
+        fig_loss.update_layout(
+            xaxis_title="Hour of Day",
+            yaxis_title="Packet Loss (%)",
+            template="plotly_dark",
+            margin=dict(l=40, r=30, t=30, b=40),
+            height=340,
+            hovermode="x unified",
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(15, 23, 42, 0.6)",
+        )
+
+        st.plotly_chart(fig_loss, use_container_width=True)
         st.caption("🟡 Amber dotted line indicates 2.0% bad packet loss threshold.")
 else:
     st.info("No hourly metrics data available for this router.")
