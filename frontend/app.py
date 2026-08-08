@@ -28,6 +28,18 @@ def format_health_score_badge(score):
     return f"{badge} {score_str}"
 
 
+def _unwrap_list(payload, key):
+    """
+    Backend may return either a plain list [...] or a dict {key: [...]}.
+    Handle both so the frontend doesn't crash on a shape mismatch.
+    """
+    if isinstance(payload, list):
+        return payload
+    if isinstance(payload, dict):
+        return payload.get(key, [])
+    return []
+
+
 # ------------------------------------------------------------------------------
 # Configuration & Setup
 # ------------------------------------------------------------------------------
@@ -125,6 +137,16 @@ st.markdown(
         font-weight: 600;
         display: inline-block;
     }
+    .badge-confidence {
+        background-color: rgba(99, 102, 241, 0.2);
+        color: #a5b4fc;
+        border: 1px solid rgba(99, 102, 241, 0.4);
+        padding: 4px 10px;
+        border-radius: 9999px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        display: inline-block;
+    }
 
     /* Complaint Cards */
     .complaint-card {
@@ -159,6 +181,18 @@ st.markdown(
         margin-top: 16px;
         color: #e0e7ff;
     }
+
+    /* Firmware Alert Banner */
+    .firmware-alert-banner {
+        background: linear-gradient(135deg, #7c2d12 0%, #9a3412 100%);
+        border: 1px solid #ea580c;
+        border-radius: 10px;
+        padding: 14px 20px;
+        color: #fed7aa;
+        font-weight: 600;
+        font-size: 1rem;
+        margin-bottom: 12px;
+    }
 </style>
 """,
     unsafe_allow_html=True,
@@ -173,7 +207,7 @@ def fetch_firmware_stats():
     try:
         resp = requests.get(f"{API_URL}/firmware-stats", timeout=5)
         if resp.status_code == 200:
-            return resp.json().get("firmware_stats", [])
+            return _unwrap_list(resp.json(), "firmware_stats")
         else:
             st.error(f"API Error {resp.status_code}: {resp.text}")
             return []
@@ -187,9 +221,9 @@ def fetch_rankings(n=10):
     try:
         resp = requests.get(f"{API_URL}/rankings?n={n}", timeout=5)
         if resp.status_code == 200:
-            return resp.json().get("rankings", [])
+            return _unwrap_list(resp.json(), "rankings")
         else:
-            st.error(f"API Error {resp.stacd..tus_code}: {resp.text}")
+            st.error(f"API Error {resp.status_code}: {resp.text}")
             return []
     except Exception as e:
         st.error(f"Could not connect to backend at `{API_URL}`: {e}")
@@ -255,7 +289,6 @@ st.markdown(
 """,
     unsafe_allow_html=True,
 )
-
 
 
 # Sidebar Configuration & Refresh
@@ -744,6 +777,22 @@ if submit_copilot or quick_question:
         confidence = diag_dict.get("confidence", 0.0)
         confidence_pct = int(round(confidence * 100))
 
+        # phrased_ans may now be a structured dict {cause, evidence, recommended_fix}
+        # or a plain string, depending on backend version — handle both.
+        if isinstance(phrased_ans, dict):
+            phrased_display = phrased_ans.get("diagnosis") or phrased_ans.get("cause", "")
+            phrased_evidence_list = phrased_ans.get("evidence", [])
+            phrased_fix = phrased_ans.get("recommended_fix", "")
+            phrased_html = f"<b>{phrased_display}</b><br>"
+            if phrased_evidence_list:
+                phrased_html += "<ul>" + "".join(
+                    f"<li>{e}</li>" for e in phrased_evidence_list
+                ) + "</ul>"
+            if phrased_fix:
+                phrased_html += f"<b>Recommended fix:</b> {phrased_fix}"
+        else:
+            phrased_html = phrased_ans
+
         st.markdown(
             f"""
         <div class="copilot-response">
@@ -752,7 +801,7 @@ if submit_copilot or quick_question:
                 <span class="badge-confidence">🎯 {confidence_pct}% Confidence</span>
             </div>
             <div style="font-size: 1.05rem; line-height: 1.6;">
-                {phrased_ans}
+                {phrased_html}
             </div>
         </div>
         """,
