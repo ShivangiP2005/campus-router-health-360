@@ -159,6 +159,19 @@ st.markdown(
         margin-top: 16px;
         color: #e0e7ff;
     }
+
+    /* Alert Banner for Flagged Firmware */
+    .firmware-alert-banner {
+        background: linear-gradient(135deg, #dc2626 0%, #ea580c 100%);
+        border: 1px solid #f87171;
+        border-radius: 12px;
+        padding: 16px 24px;
+        color: #ffffff;
+        font-size: 1.15rem;
+        font-weight: 700;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 25px -5px rgba(220, 38, 38, 0.4);
+    }
 </style>
 """,
     unsafe_allow_html=True,
@@ -168,6 +181,20 @@ st.markdown(
 # ------------------------------------------------------------------------------
 # Helper Functions for API Calls
 # ------------------------------------------------------------------------------
+@st.cache_data(ttl=15)
+def fetch_firmware_stats():
+    try:
+        resp = requests.get(f"{API_URL}/firmware-stats", timeout=5)
+        if resp.status_code == 200:
+            return resp.json().get("firmware_stats", [])
+        else:
+            st.error(f"API Error {resp.status_code}: {resp.text}")
+            return []
+    except Exception as e:
+        st.error(f"Could not connect to backend at `{API_URL}`: {e}")
+        return []
+
+
 @st.cache_data(ttl=15)
 def fetch_rankings(n=10):
     try:
@@ -213,8 +240,25 @@ def call_copilot(router_id, question):
 
 
 # ------------------------------------------------------------------------------
-# Header Banner
+# Header Banner & Alert Banner
 # ------------------------------------------------------------------------------
+# Prominent Alert Banner for Flagged Firmware (GET /firmware-stats)
+firmware_stats_data = fetch_firmware_stats()
+flagged_firmwares = [fw for fw in firmware_stats_data if fw.get("is_flagged")]
+
+for fw in flagged_firmwares:
+    version = fw.get("firmware_version", "unknown")
+    n_affected = fw.get("affected_router_count", 0)
+    avg_score = fw.get("avg_health_score", 0.0)
+    st.markdown(
+        f"""
+<div class="firmware-alert-banner">
+    ⚠️ Firmware {version} flagged — {n_affected} routers affected, avg health {avg_score:.1f}
+</div>
+""",
+        unsafe_allow_html=True,
+    )
+
 st.markdown(
     """
 <div class="header-banner">
@@ -224,6 +268,7 @@ st.markdown(
 """,
     unsafe_allow_html=True,
 )
+
 
 
 # Sidebar Configuration & Refresh

@@ -195,6 +195,13 @@ def get_router_detail(router_id: str):
     }
 
 
+@app.get("/firmware-stats")
+def get_firmware_stats():
+    firmware_stats = DATA["firmware_stats"]
+    records = firmware_stats.to_dict(orient="records")
+    return {"firmware_stats": records}
+
+
 @app.post("/copilot")
 def query_copilot(req: CopilotRequest):
     scored_df = DATA["scored_df"]
@@ -212,4 +219,4 @@ def query_copilot(req: CopilotRequest):
         "question": req.question,
         "diagnosis": diag,
         "phrased_answer": phrased,
-    }
+    }
