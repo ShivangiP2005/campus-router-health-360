@@ -159,6 +159,21 @@ st.markdown(
         margin-top: 16px;
         color: #e0e7ff;
     }
+
+    /* Confidence Badge */
+    .badge-confidence {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 9999px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        margin-left: 10px;
+        vertical-align: middle;
+        border: 1px solid rgba(129, 140, 248, 0.5);
+        background-color: rgba(99, 102, 241, 0.2);
+        color: #c7d2fe;
+    }
 </style>
 """,
     unsafe_allow_html=True,
@@ -696,8 +711,10 @@ with st.form("copilot_form", clear_on_submit=False):
 
 if submit_copilot or quick_question:
     query_text = quick_question if quick_question else user_question
+
+    copilot_result = None
     with st.spinner(
-        "Analyzing telemetry data and generating deterministic diagnosis..."
+        "🧠 Contacting AI Copilot — analyzing telemetry, diagnosing root cause..."
     ):
         copilot_result = call_copilot(selected_router_id, query_text)
 
@@ -708,12 +725,14 @@ if submit_copilot or quick_question:
         cause = diag_dict.get("cause", "unknown")
         fix = diag_dict.get("fix", "none")
         confidence = diag_dict.get("confidence", 0.0)
+        confidence_pct = int(round(confidence * 100))
 
         st.markdown(
             f"""
         <div class="copilot-response">
-            <div style="font-size: 1.1rem; font-weight: 700; color: #818cf8; margin-bottom: 8px;">
-                💬 Copilot Diagnosis & Answer:
+            <div style="font-size: 1.1rem; font-weight: 700; color: #818cf8; margin-bottom: 8px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px;">
+                💬 Copilot Diagnosis &amp; Answer:
+                <span class="badge-confidence">🎯 {confidence_pct}% Confidence</span>
             </div>
             <div style="font-size: 1.05rem; line-height: 1.6;">
                 {phrased_ans}
@@ -733,7 +752,7 @@ if submit_copilot or quick_question:
         with ev_c2:
             st.metric("Recommended Fix", str(fix).upper())
         with ev_c3:
-            st.metric("Diagnosis Confidence", f"{confidence * 100:.0f}%")
+            st.metric("Diagnosis Confidence", f"{confidence_pct}%")
         with ev_c4:
             st.metric("Evidence Points", f"{len(evidence)} items")
 
