@@ -209,9 +209,6 @@ st.markdown(
 
 # Sidebar Configuration & Refresh
 with st.sidebar:
-    st.header("⚙️ Settings")
-    st.text_input("Backend API URL", value=API_URL, key="api_url_input", disabled=True)
-    st.markdown("---")
     st.markdown("### 📊 Fleet Rules & Thresholds")
     st.markdown("""
     - **Latency Threshold**: > 60 ms
