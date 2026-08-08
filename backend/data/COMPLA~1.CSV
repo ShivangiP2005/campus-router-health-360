@@ -1,0 +1,31 @@
+ticket_id,router_id,date,complaint_text
+T-901,R-1002,2026-08-02,Video calls freeze constantly
+T-902,R-1002,2026-07-29,No signal in the corner of the room
+T-903,R-1010,2026-08-02,Router restarts on its own multiple times a day
+T-904,R-1010,2026-07-26,Router keeps disconnecting during online exam
+T-905,R-1010,2026-07-30,Wi-Fi drops every evening during class
+T-906,R-1010,2026-08-05,Video calls freeze constantly
+T-907,R-1018,2026-08-04,Router keeps disconnecting during online exam
+T-908,R-1018,2026-08-03,Router keeps disconnecting during online exam
+T-909,R-1018,2026-08-01,Can't connect more than 2 devices
+T-910,R-1026,2026-07-27,No signal in the corner of the room
+T-911,R-1026,2026-07-28,No signal in the corner of the room
+T-912,R-1026,2026-08-05,Wi-Fi drops every evening during class
+T-913,R-1034,2026-08-05,Internet extremely slow after 8pm
+T-914,R-1034,2026-08-04,Router keeps disconnecting during online exam
+T-915,R-1034,2026-07-31,Router restarts on its own multiple times a day
+T-916,R-1042,2026-07-27,Wi-Fi drops every evening during class
+T-917,R-1042,2026-07-26,"Speed is fine in morning, unusable at night"
+T-918,R-1042,2026-08-01,Router keeps disconnecting during online exam
+T-919,R-1042,2026-07-25,Internet extremely slow after 8pm
+T-920,R-1050,2026-08-04,"Speed is fine in morning, unusable at night"
+T-921,R-1050,2026-08-03,Router restarts on its own multiple times a day
+T-922,R-1050,2026-07-27,Router restarts on its own multiple times a day
+T-923,R-1050,2026-07-28,Wi-Fi drops every evening during class
+T-924,R-1058,2026-07-28,Router restarts on its own multiple times a day
+T-925,R-1058,2026-08-01,Video calls freeze constantly
+T-926,R-1051,2026-08-06,Router keeps disconnecting during online exam
+T-927,R-1047,2026-08-03,Internet extremely slow after 8pm
+T-928,R-1056,2026-08-04,Router restarts on its own multiple times a day
+T-929,R-1020,2026-08-04,"Speed is fine in morning, unusable at night"
+T-930,R-1000,2026-07-29,Internet extremely slow after 8pm
