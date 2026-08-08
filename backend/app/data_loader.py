@@ -6,8 +6,8 @@ Loads CSV datasets from backend/data and pre-computes health scores and firmware
 from pathlib import Path
 import pandas as pd
 
-from backend.app.scoring import compute_health_scores
-from backend.app.diagnosis import get_firmware_batch_flags
+from app.scoring import compute_health_scores
+from app.diagnosis import get_firmware_batch_flags
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
